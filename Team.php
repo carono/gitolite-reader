@@ -1,26 +1,7 @@
 <?php
 
-namespace app\components;
+namespace carono\gitolite;
 
-/**
- * Gitolite Team Class
- *
- * Project:   gitolite-php
- * File:      src/Gitolite/Team.php
- *
- * Copyright (C) 2012 Rafael Goulart
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by  the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- *
- * @property string type
- * @author  Rafael Goulart <rafaelgou@gmail.com>
- * @license GNU Lesser General Public License
- * @link    https://github.com/rafaelgou/gitolite-php
- * see CHANGELOG
- */
 class Team extends Object
 {
     const USERS = 'users';

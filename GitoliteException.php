@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Карно
- * Date: 14.05.2016
- * Time: 14:26
- */
 
-namespace app\components;
+
+namespace carono\gitolite;
 
 
 class GitoliteException extends \Exception
