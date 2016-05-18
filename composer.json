@@ -1,0 +1,21 @@
+{
+  "name": "carono/gitolite-reader",
+  "description": "Reader gitolite conf",
+  "type": "parser",
+  "keywords": [
+    "gitolite",
+    "parser"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Alexander Kasyanov",
+      "email": "spamer2000@yandex.ru"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "carono\\gitolite\\": ""
+    }
+  }
+}
