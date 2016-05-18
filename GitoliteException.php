@@ -16,9 +16,19 @@ class GitoliteException extends \Exception
         throw new \Exception($text);
     }
 
+    public static function throwInvalidDefinition($team)
+    {
+        throw new self("Team $team has several definitions");
+    }
+
     public static function throwWrongTeamType($team, $need)
     {
         throw new self("Team $team is wrong type, needed $need");
+    }
+
+    public static function throwUndefinedTeamType($team)
+    {
+        throw new self("Cannot determine type of team $team");
     }
 
     public static function throwInvalidRule($raw)

@@ -1,40 +1,43 @@
 <?php
 
 namespace carono\gitolite;
-
+/**
+ * Class Team
+ *
+ * @package carono\gitolite
+ * @property string type
+ * @property string clearName
+ */
 class Team extends Object
 {
-    const USERS = 'users';
+    const USER = 'users';
     const REPO = 'repo';
+    const REF = 'ref';
+    const OPTION = 'option';
     /**
      * @var Object[]
      */
     public $items = [];
     protected $_type;
 
-    protected function searchType()
+    public function getClearName()
     {
-        /**
-         * @var Team $team
-         */
-//        foreach ($this->items as $item) {
-//            if ($item instanceof User) {
-//                return $this->type = self::USERS;
-//            } elseif ($item instanceof Repo) {
-//                return $this->type = self::REPO;
-//            }
-//        }
-        return false;
+        return $this->_name;
     }
 
+    public function getName()
+    {
+        return "@" . $this->_name;
+    }
+
+    public function setName($name)
+    {
+        $this->_name = trim($name, "@ ");
+    }
 
     public function getType()
     {
-        if ($this->_type) {
-            return $this->_type;
-        } else {
-            return $this->searchType();
-        }
+        return $this->_type;
     }
 
     public function setType($value)
@@ -44,8 +47,8 @@ class Team extends Object
 
     public function addObject($item)
     {
-        if ($item instanceof User && $this->type != self::USERS) {
-            GitoliteException::throwWrongTeamType($item->name, self::USERS);
+        if ($item instanceof User && $this->type != self::USER) {
+            GitoliteException::throwWrongTeamType($item->name, self::USER);
         } elseif ($item instanceof Repo && $this->type != self::REPO) {
             GitoliteException::throwWrongTeamType($item->name, self::REPO);
         }

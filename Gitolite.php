@@ -22,6 +22,7 @@ namespace carono\gitolite;
  */
 class Gitolite
 {
+    public $conf;
     protected $gitRemoteRepositoryURL = null;
     protected $gitLocalRepositoryPath = null;
     protected $gitEmail = null;
@@ -63,6 +64,7 @@ class Gitolite
     {
         $team = new Team();
         $team->name = 'all';
+        $team->type = Team::USER;
         $this->addTeam($team);
     }
 
@@ -309,14 +311,20 @@ class Gitolite
     /**
      * Get Team
      *
-     * @param string team name
+     * @param      string team name
+     *
+     * @param bool $strict
      *
      * @return Team
      */
-    public function getTeam($name)
+    public function getTeam($name, $strict = false)
     {
-        $name = trim($name, '@ ');
-        return (isset($this->teams[$name])) ? $this->teams[$name] : false;
+        $name = trim($name);
+        if (!($team = (isset($this->teams[$name]) ? $this->teams[$name] : false)) && $strict) {
+            GitoliteException::throwUndefinedTeam($name);
+        } else {
+            return $team;
+        }
     }
 
     /**
@@ -364,9 +372,14 @@ class Gitolite
         */
     }
 
+    /**
+     * @param $string
+     *
+     * @return bool
+     */
     protected static function isTeam($string)
     {
-        return preg_match('/^[@]/', $string);
+        return (bool)preg_match('/^[@]/', $string);
     }
 
     protected function parseTeam($line)
@@ -375,33 +388,46 @@ class Gitolite
         if (count($arr) != 2) {
             GitoliteException::throwInvalidTeam($line);
         }
-        $name = trim($arr[0], "@ ");
+        $name = $arr[0];
+        $result = [];
         if (!$team = $this->getTeam($name)) {
             $team = new Team();
             $team->name = $name;
-            $this->addTeam($team);
+            $team->type = self::getTeamType($team->name, $this->conf);
+            $result[] = $team;
         }
         foreach (array_filter(preg_split("/[\s\t]+/", $arr[1])) as $name) {
             if (self::isTeam($name)) {
-                $team->addObjects($this->getTeamObjects($name));
+//                $team->addObjects($this->getTeamObjects($name));
             } else {
-                $object = new Object();
+                $object = null;
+                if ($team->type == Team::USER) {
+                    $object = new User();
+                } elseif ($team->type == Team::REPO) {
+                    $object = new Repo();
+                } elseif ($team->type == Team::OPTION) {
+                    $object = new Object();
+                } else {
+                    $object = new Object();
+                }
                 $object->name = $name;
+                $object->addTeam($team);
                 $team->addObject($object);
             }
         }
+        return $result;
     }
 
-    public function getTeamObjects($name)
-    {
-        $name = trim($name, "@ ");
-        if (!isset($this->teams[$name])) {
-            GitoliteException::throwUndefinedTeam($name);
-        }
-        return $this->teams[$name]->items;
-    }
+//    public function getTeamObjects($name)
+//    {
+//        $name = trim($name, "@ ");
+//        if (!isset($this->teams[$name])) {
+//            GitoliteException::throwUndefinedTeam($name);
+//        }
+//        return $this->teams[$name]->items;
+//    }
 
-    private function parseRule($line)
+    private function parseRule($line, $strict = true)
     {
         $arr = preg_split("/[=]+/", $line, 2);
         if (count($arr) != 2) {
@@ -417,19 +443,21 @@ class Gitolite
         $users = preg_split("/[\s\t]+/", trim($arr[1]));
         foreach ($users as $user) {
             if (self::isTeam($user)) {
-                if (!$this->getTeam($user)) {
-                    GitoliteException::throwUndefinedTeam($user);
-                }
-                foreach ($this->getTeamAsUser($user)->items as $userModel) {
-                    $acl->addUser($userModel);
-                    $this->addUser($userModel);
+                if ($strict) {
+                    $team = $this->getTeam($user, true);
+                    $team->type = Team::USER;
+                    $acl->addTeam($team);
+                } else {
+                    $team = new Team();
+                    $team->type = Team::USER;
+                    $team->name = $user;
+                    $acl->addTeam($team);
                 }
             } else {
-                if (!$userModel = $this->getUser($user)) {
-                    $userModel = new User();
-                    $userModel->setName($user);
-                    $this->addUser($userModel);
-                }
+                $userModel = new User();
+                $userModel->name = $user;
+//                if (!$userModel = $this->getUser($user)) {
+//                }
                 $acl->addUser($userModel);
             }
         }
@@ -470,44 +498,107 @@ class Gitolite
 
     public function getTeamAsUser($name)
     {
-        return $this->getTeamAs($name, Team::USERS, User::className());
+        return $this->getTeamAs($name, Team::USER, 'app\components\User');
     }
 
     public function getTeamAsRepo($name)
     {
-        return $this->getTeamAs($name, Team::REPO, Repo::className());
+        return $this->getTeamAs($name, Team::REPO, 'app\components\Repo');
     }
 
     /**
-     * @param $line
+     * @param      $line
+     *
+     * @param bool $strict
      *
      * @return Repo[]
-     * @throws GitoliteException
      */
-    protected function parseRepo($line)
+    protected function parseRepo($line, $strict = true)
     {
-        $find = [];
+        $result = [];
         $arr = preg_split("/[\s\t]+/", $line);
         array_shift($arr);
         foreach ($arr as $name) {
             if (self::isTeam($name)) {
-                if (!$team = $this->getTeamAsRepo($name)) {
-                    GitoliteException::throwUndefinedTeam($name);
+                if ($strict) {
+                    $team = $this->getTeam($name, true);
+                    $team->type = Team::REPO;
+                    $result = array_merge($result, $team->items);
+                } else {
+                    $team = new Team();
+                    $team->type = Team::REPO;
+                    $team->name = $name;
+                    $result[] = $team;
                 }
-                $find = array_merge($find, $team->items);
             } else {
                 $repo = new Repo();
-                $repo->setName($name);
-                $this->addRepo($repo);
-                $find[] = $repo;
+                $repo->name = $name;
+                $result[] = $repo;
             }
         }
-        return $find;
+        return $result;
+    }
+
+    public static function clearLine($raw)
+    {
+        return trim(preg_replace('/#.*/', '', $raw));
+    }
+
+    protected function getTeamType($team, $conf)
+    {
+        $team = trim($team);
+        $file = file($conf);
+        $result = null;
+        foreach ($file as $line) {
+            $line = self::clearLine($line);
+            if (self::isRepo($line)) {
+                foreach (self::parseRepo($line, false) as $repo) {
+                    if ($repo instanceof Team && $repo->name == $team) {
+                        if ($result && $result != Team::REPO) {
+                            GitoliteException::throwInvalidDefinition($result);
+                        }
+                        $result = Team::REPO;
+                    }
+                }
+            } elseif (self::isRule($line)) {
+                $rule = self::parseRule($line, false);
+                foreach ($rule->teams as $object) {
+                    if ($object->name == $team) {
+                        if ($result && $result != Team::USER) {
+                            GitoliteException::throwInvalidDefinition($result);
+                        }
+                        $result = Team::USER;
+                    }
+                }
+                if ($rule->refexes == $team) {
+                    if ($result && $result != Team::REF) {
+                        GitoliteException::throwInvalidDefinition($result);
+                    }
+                    $result = Team::REF;
+                }
+            }
+        }
+        if ($result) {
+            return $result;
+        } else {
+            GitoliteException::throwUndefinedTeamType($team);
+        }
+    }
+
+    public static function isRepo($line)
+    {
+        return (bool)preg_match('/^repo/', trim($line));
+    }
+
+    public static function isRule($line)
+    {
+        return (bool)preg_match('/-|R|RW+?C?D?M?/', $line);
     }
 
     public function import($conf)
     {
         $file = file($conf);
+        $this->conf = $conf;
         $repos = null;
         foreach ($file as $line) {
             $line = trim(preg_replace('/#.*/', '', $line));
@@ -515,10 +606,14 @@ class Gitolite
                 continue;
             }
             if (preg_match('/^[@]/', $line)) {
-                $this->parseTeam($line);
-                $repos = null;
-            } elseif (preg_match('/^repo/', $line)) {
-                $repos = $this->parseRepo($line);
+                foreach ($this->parseTeam($line) as $team) {
+                    $this->addTeam($team);
+                };
+//                $repos = null;
+            } elseif (self::isRepo($line)) {
+                foreach ($repos = $this->parseRepo($line) as $repo) {
+                    $this->addRepo($repo);
+                }
             } elseif (preg_match('/^(R|RW|RW\+|\-|RWC|RW\+C|RWD|RW\+D|RWCD|RW\+CD|RWDC|RW\+DC)/', $line)) {
 //                if (!$repos) {
 //                    GitoliteException::throwInvalidSyntax('rules set without repo');

@@ -3,42 +3,31 @@
 namespace carono\gitolite;
 
 /**
- * Gitolite ACL Class
+ * Class Acl
  *
- * Project:   gitolite-php
- * File:      src/Gitolite/Acl.php
- *
- * Copyright (C) 2012 Rafael Goulart
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by  the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- *
- * @author  Rafael Goulart <rafaelgou@gmail.com>
- * @license GNU Lesser General Public License
- * @link    https://github.com/rafaelgou/gitolite-php
- * see CHANGELOG
+ * @package carono\gitolite
+ * @property string permission
+ * @property string refexes
  */
-class Acl
+class Acl extends Object
 {
-    private $allowedPermissions
-        = array(
-            'R',
-            'RW',
-            'RW+',
-            '-',
-            'RWC',
-            'RW+C',
-            'RWD',
-            'RW+D',
-            'RWCD',
-            'RW+CD',
-            'RWDC',
-            'RW+DC',
-        );
-    protected $permission = null;
-    protected $refexes = '';
+//    private $allowedPermissions
+//        = array(
+//            'R',
+//            'RW',
+//            'RW+',
+//            '-',
+//            'RWC',
+//            'RW+C',
+//            'RWD',
+//            'RW+D',
+//            'RWCD',
+//            'RW+CD',
+//            'RWDC',
+//            'RW+DC',
+//        );
+    protected $_permission = null;
+    protected $_refexes = '';
     protected $users = array();
 
     /**
@@ -52,12 +41,11 @@ class Acl
      */
     public function setPermission($permission)
     {
-        $permission = (string)$permission;
-        if (!in_array($permission, $this->allowedPermissions)) {
-            throw new \Exception("Unknow permission '{$permission}'");
-        }
-        $this->permission = $permission;
-        return $this;
+//        $permission = (string)$permission;
+//        if (!in_array($permission, $this->allowedPermissions)) {
+//            throw new \Exception("Unknow permission '{$permission}'");
+//        }
+        $this->_permission = $permission;
     }
 
     /**
@@ -67,7 +55,7 @@ class Acl
      */
     public function getPermission()
     {
-        return $this->permission;
+        return $this->_permission;
     }
 
     /**
@@ -79,8 +67,7 @@ class Acl
      */
     public function setRefexes($refexes)
     {
-        $this->refexes = $refexes;
-        return $this;
+        $this->_refexes = $refexes;
     }
 
     /**
@@ -90,7 +77,7 @@ class Acl
      */
     public function getRefexes()
     {
-        return $this->refexes;
+        return $this->_refexes;
     }
 
 
@@ -101,24 +88,24 @@ class Acl
      *
      * @return Acl
      */
-    public function setUsers(array $users)
-    {
-        $this->users = array();
-        foreach ($users as $user) {
-            $this->addUser($user);
-        }
-        return $this;
-    }
+//    public function setUsers(array $users)
+//    {
+//        $this->users = array();
+//        foreach ($users as $user) {
+//            $this->addUser($user);
+//        }
+//        return $this;
+//    }
 
     /**
      * Get Users
      *
      * @return array of Users
      */
-    public function getUsers()
-    {
-        return $this->users;
-    }
+//    public function getUsers()
+//    {
+//        return $this->users;
+//    }
 
     /**
      * Add user
@@ -129,7 +116,7 @@ class Acl
      */
     public function addUser(User $user)
     {
-        $this->users[] = $user;
+        $this->users[$user->name] = $user;
         return $this;
     }
 
@@ -140,14 +127,14 @@ class Acl
      *
      * @return Acl
      */
-    public function setTeams(array $teams)
-    {
-        $this->teams = array();
-        foreach ($teams as $team) {
-            $this->addTeam($team);
-        }
-        return $this;
-    }
+//    public function setTeams(array $teams)
+//    {
+//        $this->teams = array();
+//        foreach ($teams as $team) {
+//            $this->addTeam($team);
+//        }
+//        return $this;
+//    }
 
     /**
      * Add Team
@@ -156,16 +143,16 @@ class Acl
      *
      * @return Acl
      */
-    public function addTeam(Team $team)
-    {
-        if ($team->type != Team::USERS) {
-            GitoliteException::throwWrongTeamType($team, Team::USERS);
-        }
-        foreach ($team->items as $item) {
-            $this->addUser($item);
-        }
-        return $this;
-    }
+//    public function addTeam(Team $team)
+//    {
+//        if ($team->type != Team::USER) {
+//            GitoliteException::throwWrongTeamType($team, Team::USER);
+//        }
+//        foreach ($team->items as $item) {
+//            $this->addUser($item);
+//        }
+//        return $this;
+//    }
 
     /**
      * Returns acl line
@@ -176,30 +163,30 @@ class Acl
      *
      * @return string
      */
-    public function render($nl = true)
-    {
-        if (null === $this->permission) {
-            throw new \Exception("Permission not defined");
-        }
-
-        if (count($this->teams) == 0 && count($this->users) == 0) {
-            throw new \Exception("No users neither teams defined");
-        }
-
-        $teams = array();
-        foreach ($this->getTeams() as $team) {
-            $teams[] = $team->getFormatedName();
-        }
-
-        $users = array();
-        foreach ($this->getUsers() as $user) {
-            $users[] = $user->getUsername();
-        }
-
-        $refexes = (!empty($this->refexes)) ? $this->refexes . ' ' : '';
-
-        return $this->permission . ' ' . $refexes . '= ' . implode(' ', $users) . ' ' . implode(' ', $teams) . ($nl
-            ? PHP_EOL : '');
-    }
+//    public function render($nl = true)
+//    {
+//        if (null === $this->permission) {
+//            throw new \Exception("Permission not defined");
+//        }
+//
+//        if (count($this->teams) == 0 && count($this->users) == 0) {
+//            throw new \Exception("No users neither teams defined");
+//        }
+//
+//        $teams = array();
+//        foreach ($this->getTeams() as $team) {
+//            $teams[] = $team->getFormatedName();
+//        }
+//
+//        $users = array();
+//        foreach ($this->getUsers() as $user) {
+//            $users[] = $user->getUsername();
+//        }
+//
+//        $refexes = (!empty($this->refexes)) ? $this->refexes . ' ' : '';
+//
+//        return $this->permission . ' ' . $refexes . '= ' . implode(' ', $users) . ' ' . implode(' ', $teams) . ($nl
+//            ? PHP_EOL : '');
+//    }
 
 }
