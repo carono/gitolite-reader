@@ -470,12 +470,12 @@ class Gitolite
 
     public function getTeamAsUser($name)
     {
-        return $this->getTeamAs($name, Team::USERS, 'app\components\User');
+        return $this->getTeamAs($name, Team::USERS, User::className());
     }
 
     public function getTeamAsRepo($name)
     {
-        return $this->getTeamAs($name, Team::REPO, 'app\components\Repo');
+        return $this->getTeamAs($name, Team::REPO, Repo::className());
     }
 
     /**

@@ -14,6 +14,11 @@ class Object
         return $this;
     }
 
+    public static function className()
+    {
+        return get_called_class();
+    }
+    
     /**
      * Get Name
      *
