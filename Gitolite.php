@@ -16,7 +16,6 @@ class Gitolite extends Object
      */
     protected $gitoliteRepository = null;
 
-    protected $users = array();
     /**
      * @var Team[]
      */
@@ -218,14 +217,6 @@ class Gitolite extends Object
      *
      * @return Acl
      */
-    public function setUsers(array $users)
-    {
-        $this->users = array();
-        foreach ($users as $user) {
-            $this->addUser($user);
-        }
-        return $this;
-    }
 
     /**
      * Get Users
@@ -234,7 +225,15 @@ class Gitolite extends Object
      */
     public function getUsers()
     {
-        return $this->users;
+        $result = [];
+        foreach ($this->teams as $team) {
+            if ($team->type == Team::USER) {
+                foreach ($team->items as $user) {
+                    $result[$user->name] = $user;
+                }
+            }
+        }
+        return $result;
     }
 
     /**
@@ -279,15 +278,6 @@ class Gitolite extends Object
         return $this;
     }
 
-    /**
-     * Get Teams
-     *
-     * @return array of Teams
-     */
-    public function getTeams()
-    {
-        return $this->teams;
-    }
 
     /**
      * Get Team
@@ -300,7 +290,7 @@ class Gitolite extends Object
      */
     public function getTeam($name, $strict = false)
     {
-        $name = trim($name,"\t ");
+        $name = trim($name, "\t ");
         if (!($team = (isset($this->teams[$name]) ? $this->teams[$name] : false)) && $strict) {
             GitoliteException::throwUndefinedTeam($name);
         } else {
@@ -318,11 +308,6 @@ class Gitolite extends Object
     public function addTeam(Team $team)
     {
         $this->teams[$team->name] = $team;
-        if ($team->type == Team::USER) {
-            foreach ($team->items as $user) {
-                $this->addUser($user);
-            }
-        }
         return $this;
     }
 
@@ -384,7 +369,9 @@ class Gitolite extends Object
         }
         foreach (array_filter(preg_split("/[\s\t]+/", $arr[1])) as $name) {
             if (self::isTeam($name)) {
-//                $team->addObjects($this->getTeamObjects($name));
+                foreach ($this->getTeam($name)->items as $object) {
+                    $team->addObject($object);
+                }
             } else {
                 $object = null;
                 if ($team->type == Team::USER) {
@@ -440,10 +427,8 @@ class Gitolite extends Object
                     $acl->addTeam($team);
                 }
             } else {
-                if (!$userModel = $this->getUser($user)) {
-                    $userModel = new User();
-                    $userModel->name = $user;
-                }
+                $userModel = new User();
+                $userModel->name = $user;
                 $acl->addUser($userModel);
             }
         }
@@ -604,9 +589,6 @@ class Gitolite extends Object
                 $rule = $this->parseRule($line);
                 foreach ($reps as $repo) {
                     $repo->addAcl($rule);
-                    foreach ($rule->users as $user) {
-                        $this->addUser($user);
-                    }
                 }
             }
         }

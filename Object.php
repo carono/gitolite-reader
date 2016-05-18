@@ -11,6 +11,9 @@ namespace carono\gitolite;
 class Object
 {
     protected $_name;
+    /**
+     * @var Team[]
+     */
     public $teams = [];
 
     public function setName($name)
