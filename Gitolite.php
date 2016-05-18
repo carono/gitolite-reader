@@ -2,25 +2,8 @@
 
 namespace carono\gitolite;
 
-/**
- * Gitolite Class
- *
- * Project:   gitolite-php
- * File:      src/Gitolite/Gitolite.php
- *
- * Copyright (C) 2012 Rafael Goulart
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by  the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- *
- * @author  Rafael Goulart <rafaelgou@gmail.com>
- * @license GNU Lesser General Public License
- * @link    https://github.com/rafaelgou/gitolite-php
- * see CHANGELOG
- */
-class Gitolite
+
+class Gitolite extends Object
 {
     public $conf;
     protected $gitRemoteRepositoryURL = null;
@@ -37,9 +20,7 @@ class Gitolite
     /**
      * @var Team[]
      */
-    protected $teams = array();
     protected $repos = array();
-
     protected $log = array();
 
     const GITOLITE_CONF_FILE = 'gitolite.conf';
@@ -214,7 +195,7 @@ class Gitolite
      */
     public function addRepo(Repo $repo)
     {
-        $name = $repo->getName();
+        $name = $repo->name;
         $this->repos[$name] = $repo;
         return $this;
     }
@@ -319,7 +300,7 @@ class Gitolite
      */
     public function getTeam($name, $strict = false)
     {
-        $name = trim($name);
+        $name = trim($name,"\t ");
         if (!($team = (isset($this->teams[$name]) ? $this->teams[$name] : false)) && $strict) {
             GitoliteException::throwUndefinedTeam($name);
         } else {
@@ -337,6 +318,11 @@ class Gitolite
     public function addTeam(Team $team)
     {
         $this->teams[$team->name] = $team;
+        if ($team->type == Team::USER) {
+            foreach ($team->items as $user) {
+                $this->addUser($user);
+            }
+        }
         return $this;
     }
 
@@ -454,10 +440,10 @@ class Gitolite
                     $acl->addTeam($team);
                 }
             } else {
-                $userModel = new User();
-                $userModel->name = $user;
-//                if (!$userModel = $this->getUser($user)) {
-//                }
+                if (!$userModel = $this->getUser($user)) {
+                    $userModel = new User();
+                    $userModel->name = $user;
+                }
                 $acl->addUser($userModel);
             }
         }
@@ -599,29 +585,29 @@ class Gitolite
     {
         $file = file($conf);
         $this->conf = $conf;
-        $repos = null;
+        $reps = null;
         foreach ($file as $line) {
-            $line = trim(preg_replace('/#.*/', '', $line));
-            if ($line == '') {
-                continue;
-            }
-            if (preg_match('/^[@]/', $line)) {
+            $line = self::clearLine($line);
+            if (self::isTeam($line)) {
                 foreach ($this->parseTeam($line) as $team) {
                     $this->addTeam($team);
                 };
-//                $repos = null;
+                $reps = null;
             } elseif (self::isRepo($line)) {
-                foreach ($repos = $this->parseRepo($line) as $repo) {
+                foreach ($reps = $this->parseRepo($line) as $repo) {
                     $this->addRepo($repo);
                 }
-            } elseif (preg_match('/^(R|RW|RW\+|\-|RWC|RW\+C|RWD|RW\+D|RWCD|RW\+CD|RWDC|RW\+DC)/', $line)) {
-//                if (!$repos) {
-//                    GitoliteException::throwInvalidSyntax('rules set without repo');
-//                }
-//                $rule = $this->parseRule($line);
-//                foreach ($repos as $repo) {
-//                    $repo->addAcl($rule);
-//                }
+            } elseif (self::isRule($line)) {
+                if (!$reps) {
+                    GitoliteException::throwInvalidSyntax('rules set without repo');
+                }
+                $rule = $this->parseRule($line);
+                foreach ($reps as $repo) {
+                    $repo->addAcl($rule);
+                    foreach ($rule->users as $user) {
+                        $this->addUser($user);
+                    }
+                }
             }
         }
     }

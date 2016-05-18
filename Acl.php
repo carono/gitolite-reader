@@ -8,27 +8,13 @@ namespace carono\gitolite;
  * @package carono\gitolite
  * @property string permission
  * @property string refexes
+ * @property User[] users
  */
 class Acl extends Object
 {
-//    private $allowedPermissions
-//        = array(
-//            'R',
-//            'RW',
-//            'RW+',
-//            '-',
-//            'RWC',
-//            'RW+C',
-//            'RWD',
-//            'RW+D',
-//            'RWCD',
-//            'RW+CD',
-//            'RWDC',
-//            'RW+DC',
-//        );
     protected $_permission = null;
     protected $_refexes = '';
-    protected $users = array();
+    protected $_users = array();
 
     /**
      * Set Permission
@@ -41,10 +27,6 @@ class Acl extends Object
      */
     public function setPermission($permission)
     {
-//        $permission = (string)$permission;
-//        if (!in_array($permission, $this->allowedPermissions)) {
-//            throw new \Exception("Unknow permission '{$permission}'");
-//        }
         $this->_permission = $permission;
     }
 
@@ -116,8 +98,13 @@ class Acl extends Object
      */
     public function addUser(User $user)
     {
-        $this->users[$user->name] = $user;
+        $this->_users[$user->name] = $user;
         return $this;
+    }
+
+    public function getUsers()
+    {
+        return $this->_users;
     }
 
     /**

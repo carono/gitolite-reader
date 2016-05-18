@@ -32,7 +32,7 @@ class Team extends Object
 
     public function setName($name)
     {
-        $this->_name = trim($name, "@ ");
+        $this->_name = trim($name, "@ \t");
     }
 
     public function getType()
